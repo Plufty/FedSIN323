@@ -26,7 +26,7 @@ import datetime
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 START = time.time()
-MODEL = "resnet50"
+MODEL = "alexnet"
 
 def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name=MODEL):
     cm = confusion_matrix(y_true, y_pred)
@@ -203,7 +203,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         self.set_parameters(parameters)
-        train(net, trainloader, epochs=10, output_dir="./")
+        train(net, trainloader, epochs=1, output_dir="./")
         
         return self.get_parameters(config={}), len(trainloader.dataset), {}
 
