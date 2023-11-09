@@ -149,6 +149,8 @@ def test(net, testloader, output_dir):
     elapsed_time = end_time - START
     accuracy = correct / len(testloader.dataset)
 
+    print(f"Test Loss: {loss:.4f}, Test Accuracy: {accuracy:.2%}")
+    
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
     save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, loss, elapsed_time)
