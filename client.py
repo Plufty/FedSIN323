@@ -53,16 +53,16 @@ class Net(nn.Module):
 
         if model_name == "alexnet":
             self.model = models.alexnet(pretrained=True)
-            num_ftrs = self.model.fc.in_features
-            self.model.fc = nn.Linear(num_ftrs, 2) 
+            num_features = self.model.classifier[6].in_features
+            self.model.classifier[6] = nn.Linear(num_features, 2)
         elif model_name == "resnet50":
             self.model = models.resnet50(pretrained=True)
-            num_ftrs = self.model.fc.in_features
-            self.model.fc = nn.Linear(num_ftrs, 2) 
+            num_features = self.model.fc.in_features
+            self.model.fc = nn.Linear(num_features, 2) 
         elif model_name == "efficientnet":
             self.model = EfficientNet.from_pretrained('efficientnet-b0')
-            num_ftrs = self.model._fc.in_features
-            self.model._fc = nn.Linear(num_ftrs, 2)
+            num_features = self.model._fc.in_features
+            self.model._fc = nn.Linear(num_features, 2)
         else:
             raise ValueError(f"Modelo não suportado: {model_name}")
 
