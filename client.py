@@ -52,11 +52,11 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         if model_name == "alexnet":
-            self.model = models.alexnet(pretrained=True)
+            self.model = models.alexnet(weights='DEFAULT')
             num_features = self.model.classifier[6].in_features
             self.model.classifier[6] = nn.Linear(num_features, 2)
         elif model_name == "resnet50":
-            self.model = models.resnet50(pretrained=True)
+            self.model = models.resnet50(weights='DEFAULT')
             num_features = self.model.fc.in_features
             self.model.fc = nn.Linear(num_features, 2) 
         elif model_name == "efficientnet":
@@ -175,7 +175,7 @@ def load_data():
                 
     trainset = ImageFolder("./data/train", transform=data_transforms['transform'])
     testset = ImageFolder("./data/test", transform=data_transforms['transform'])
-    return DataLoader(trainset, batch_size=32, shuffle=True), DataLoader(testset)
+    return DataLoader(trainset, batch_size=16, shuffle=True), DataLoader(testset)
 
 
 # #############################################################################
