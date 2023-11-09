@@ -1,0 +1,35 @@
+sudo apt update
+sudo apt upgrade
+sudo apt install openssh-server
+sudo apt install net-tools
+sudo apt install git
+sudo apt install python3-pip
+
+conda create -n flwr python=3.8
+
+LINUX
+git clone --depth=1 https://github.com/adap/flower.git && mv flower/examples/quickstart-pytorch . && rm -rf flower && cd quickstart-pytorch
+
+WINDOWS
+git clone --depth=1 https://github.com/adap/flower.git
+move flower\examples\quickstart-pytorch .
+rmdir /s /q flower
+cd quickstart-pytorch
+
+
+https://pytorch.org/get-started/locally/
+
+
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+pip install -r requirements.txt
+conda install torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+pip install matplotlib
+pip install scikit-learn
+pip install efficientnet_pytorch
+pip install seaborn
+
+python3 server.py (em um terminal)
+
+python3 client.py (em outro terminal)
+
