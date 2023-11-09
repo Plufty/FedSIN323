@@ -26,7 +26,7 @@ import datetime
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 START = time.time()
-MODEL = "alexnet"
+MODEL = "resnet"
 
 def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name=MODEL):
     cm = confusion_matrix(y_true, y_pred)
@@ -55,7 +55,7 @@ class Net(nn.Module):
             self.model = models.alexnet(weights='DEFAULT')
             num_features = self.model.classifier[6].in_features
             self.model.classifier[6] = nn.Linear(num_features, 2)
-        elif model_name == "resnet50":
+        elif model_name == "resnet":
             self.model = models.resnet50(weights='DEFAULT')
             num_features = self.model.fc.in_features
             self.model.fc = nn.Linear(num_features, 2) 
@@ -72,8 +72,8 @@ class Net(nn.Module):
 def train(net, trainloader, epochs, output_dir, model_name=MODEL):
     """Train the model on the training set."""
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    #optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
+    #optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
     # Lists to store loss and accuracy per epoch
     train_loss = []
     train_accuracy = []
@@ -150,7 +150,7 @@ def test(net, testloader, output_dir):
     accuracy = correct / len(testloader.dataset)
 
     print(f"Test Loss: {loss:.4f}, Test Accuracy: {accuracy:.2%}")
-    
+
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
     save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, loss, elapsed_time)
