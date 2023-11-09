@@ -11,6 +11,7 @@ from tqdm import tqdm
 from torchvision.datasets import ImageFolder
 import torchvision.models as models
 from torchvision import transforms
+from efficientnet_pytorch import EfficientNet
 
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
@@ -22,16 +23,12 @@ import datetime
 
 
 
-
-# #############################################################################
-# 1. Regular PyTorch pipeline: nn.Module, train, test, and DataLoader
-# #############################################################################
-
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 START = time.time()
+MODEL = "resnet50"
 
-def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name="alexnet"):
+def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name=MODEL):
     cm = confusion_matrix(y_true, y_pred)
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
@@ -51,23 +48,32 @@ def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, los
 
 
 class Net(nn.Module):
-
-    def __init__(self) -> None:
+    def __init__(self, model_name=MODEL) -> None:
         super(Net, self).__init__()
-        self.alexnet = models.alexnet(pretrained=True)
-        num_features = self.alexnet.classifier[6].in_features
-        self.alexnet.classifier[6] = nn.Linear(num_features, 2)
-        
-        
+
+        if model_name == "alexnet":
+            self.model = models.alexnet(pretrained=True)
+            num_ftrs = self.model.fc.in_features
+            self.model.fc = nn.Linear(num_ftrs, 2) 
+        elif model_name == "resnet50":
+            self.model = models.resnet50(pretrained=True)
+            num_ftrs = self.model.fc.in_features
+            self.model.fc = nn.Linear(num_ftrs, 2) 
+        elif model_name == "efficientnet":
+            self.model = EfficientNet.from_pretrained('efficientnet-b0')
+            num_ftrs = self.model._fc.in_features
+            self.model._fc = nn.Linear(num_ftrs, 2)
+        else:
+            raise ValueError(f"Modelo não suportado: {model_name}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.alexnet(x)
+        return self.model(x)
 
-def train(net, trainloader, epochs, output_dir, model_name="alexnet"):
+def train(net, trainloader, epochs, output_dir, model_name=MODEL):
     """Train the model on the training set."""
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    
+    #optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     # Lists to store loss and accuracy per epoch
     train_loss = []
     train_accuracy = []
