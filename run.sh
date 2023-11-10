@@ -2,8 +2,6 @@
 set -e
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"/
 
-# Download the CIFAR-10 dataset
-python -c "from torchvision.datasets import CIFAR10; CIFAR10('./data', download=True)"
 
 echo "Starting server"
 python server.py &
