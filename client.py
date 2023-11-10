@@ -12,6 +12,8 @@ from torchvision.datasets import ImageFolder
 import torchvision.models as models
 from torchvision import transforms
 from efficientnet_pytorch import EfficientNet
+import random
+
 
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
@@ -26,7 +28,7 @@ import datetime
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 START = time.time()
-MODEL = "resnet"
+MODEL = "alexnet"
 
 def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name=MODEL):
     cm = confusion_matrix(y_true, y_pred)
@@ -72,30 +74,42 @@ class Net(nn.Module):
 def train(net, trainloader, epochs, output_dir, model_name=MODEL):
     """Train the model on the training set."""
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
-    #optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    #optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     # Lists to store loss and accuracy per epoch
     train_loss = []
     train_accuracy = []
+    preds = 0
 
     for epoch in range(epochs):
         correct, total, total_loss = 0, 0, 0.0
-        for images, labels in tqdm(trainloader):
+        for inputs, labels in tqdm(trainloader):            
+            inputs = inputs.to(DEVICE)
+            labels = labels.to(DEVICE)
+
+            net.to(DEVICE)
+
+            outputs = net(inputs)
+
             optimizer.zero_grad()
-            outputs = net(images.to(DEVICE))
-            loss = criterion(outputs, labels.to(DEVICE))
+            
+            loss = criterion(outputs, labels)
+            _, preds = torch.max(outputs, 1)
             loss.backward()
             optimizer.step()
-            total_loss += loss.item()
+            total_loss += loss.item() * inputs.size(0)
             total += labels.size(0)
-            correct += (torch.max(outputs.data, 1)[1] == labels.to(DEVICE)).sum().item()
+            correct += torch.sum(preds == labels.data)
+            #correct += (torch.max(outputs.data, 1)[1] == labels.to(DEVICE)).sum().item()
         
         # Calculate accuracy and save loss and accuracy
-        accuracy = correct / total
-        train_loss.append(total_loss)
+        accuracy = correct.double() / len(trainloader.dataset)
+        epoch_loss = total_loss / len(trainloader.dataset)
+        #accuracy = correct / total
+        train_loss.append(epoch_loss)
         train_accuracy.append(accuracy)
 
-        print(f"Epoch {epoch+1}/{epochs}: Loss = {total_loss:.4f}, Accuracy = {accuracy:.2%}")
+        print(f"Epoch {epoch+1}/{epochs}: Loss = {epoch_loss:.4f}, Accuracy = {accuracy:.2%}")
 
     # Create and save loss and accuracy plots
     epochs_range = np.arange(1, epochs + 1)
@@ -108,7 +122,8 @@ def train(net, trainloader, epochs, output_dir, model_name=MODEL):
     plt.legend()
 
     plt.subplot(1, 2, 2)
-    plt.plot(epochs_range, train_accuracy, 'r', label='Training Accuracy')
+    #plt.plot(epochs_range, train_accuracy, 'r', label='Training Accuracy')
+    plt.plot(epochs_range, [acc.cpu().numpy() for acc in train_accuracy], 'r', label='Training Accuracy')
     plt.title('Training Accuracy')
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
@@ -135,11 +150,19 @@ def test(net, testloader, output_dir):
     predicted_labels =  []
 
     with torch.no_grad():
-        for images, labels in tqdm(testloader):
-            outputs = net(images.to(DEVICE))
+        for inputs, labels in tqdm(testloader):            
+            inputs = inputs.to(DEVICE)
             labels = labels.to(DEVICE)
-            loss += criterion(outputs, labels).item() * images.size(0)
-            correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
+
+            outputs = net(inputs)
+
+            _, predicted = torch.max(outputs.data, 1)
+            
+            loss += criterion(outputs, labels).item() * inputs.size(0)
+
+            correct += (predicted == labels).sum().item()
+            
+            #correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
 
             # Collect true and predicted labels for confusion matrix
             true_labels.extend(labels.cpu().numpy())
@@ -148,16 +171,17 @@ def test(net, testloader, output_dir):
     end_time = time.time()
     elapsed_time = end_time - START
     accuracy = correct / len(testloader.dataset)
+    real_loss = loss / len(testloader.dataset)
 
-    print(f"Test Loss: {loss:.4f}, Test Accuracy: {accuracy:.2%}")
+    print(f"Test Loss: {real_loss:.4f}, Test Accuracy: {accuracy:.2%}")
 
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
-    save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, loss, elapsed_time)
+    save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, real_loss, elapsed_time)
     accuracy_path = os.path.join(output_dir, "accuracy.txt")
     with open(accuracy_path, 'w') as f:
         f.write(f"Accuracy: {accuracy:.2%}")
-        f.write(f"Loss: {loss:.4f}\n")
+        f.write(f"Loss: {real_loss:.4f}\n")
         f.write(f"Elapsed Time: {elapsed_time:.2f} seconds")
 
     return loss, accuracy
@@ -188,6 +212,15 @@ def load_data():
 net = Net().to(DEVICE)
 trainloader, testloader = load_data()
 
+SEED = 42
+
+random.seed(SEED)
+np.random.seed(SEED)
+
+torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.deterministic = True
 
 # Define Flower client
 class FlowerClient(fl.client.NumPyClient):
