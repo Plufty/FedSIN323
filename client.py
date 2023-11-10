@@ -184,7 +184,7 @@ def test(net, testloader, output_dir):
         f.write(f"Loss: {real_loss:.4f}\n")
         f.write(f"Elapsed Time: {elapsed_time:.2f} seconds")
 
-    return loss, accuracy
+    return real_loss, accuracy
 
 
 
