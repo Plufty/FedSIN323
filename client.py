@@ -177,7 +177,7 @@ def test(net, testloader, output_dir):
 
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
-    save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, real_loss, elapsed_time)
+    save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, loss, elapsed_time)
     accuracy_path = os.path.join(output_dir, "accuracy.txt")
     with open(accuracy_path, 'w') as f:
         f.write(f"Accuracy: {accuracy:.2%}")
