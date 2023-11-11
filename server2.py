@@ -4,7 +4,8 @@ import flwr as fl
 from flwr.common import Metrics
 import os
 
-# Define metric aggregation function
+
+rounds = 3
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Multiply accuracy of each client by the number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
@@ -15,8 +16,8 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     return {"accuracy": sum(accuracies) / sum(examples)}
 
 # Function to save weights
-def save_weights(client_manager, round_num):
-    for i, client_manager in enumerate(client_manager):
+def save_weights(client_managers, round_num):
+    for i, client_manager in enumerate(client_managers):
         client_manager.get_weights().save(f"client_{i}_round_{round_num}_weights.h5")
 
 # Define strategy
@@ -25,15 +26,15 @@ strategy = fl.server.strategy.FedAvg(evaluate_metrics_aggregation_fn=weighted_av
 # Start Flower server
 fl.server.start_server(
     server_address="0.0.0.0:8080",
-    config=fl.server.ServerConfig(num_rounds=3),
+    config=fl.server.ServerConfig(num_rounds=rounds),
     strategy=strategy,
 )
 
 # Custom logic for saving weights at the end of each round
 round_num = 0
-while round_num < strategy.config.num_rounds:
+while round_num < rounds: 
     # Run one round of the strategy
-    strategy.next_round()
+    strategy = strategy.next_round()
     
     # Save weights at the end of each round
     save_weights(strategy.client_managers, round_num)
