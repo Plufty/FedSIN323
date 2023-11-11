@@ -1,7 +1,8 @@
-from typing import List, Tuple, Optional
-import numpy as np
+from typing import List, Tuple
+
 import flwr as fl
 from flwr.common import Metrics
+import os
 
 # Define metric aggregation function
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
@@ -13,32 +14,17 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Aggregate and return custom metric (weighted average)
     return {"accuracy": sum(accuracies) / sum(examples)}
 
-# Define a new strategy that extends FedAvg
-class SaveModelStrategy(fl.server.strategy.FedAvg):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+# Define custom callback to save weights at the end of each round
+class SaveWeightsCallback(fl.server.strategy.StrategyCallback):
+    def on_end_round(self, strategy: "fl.server.strategy.Strategy") -> None:
+        # Save weights at the end of each round
+        for i, client_manager in enumerate(strategy.client_managers):
+            client_manager.get_weights().save(f"client_{i}_weights.h5")
 
-    def aggregate_fit(
-        self,
-        rnd: int,
-        results,
-        failures,
-    ) -> Optional[fl.common.Weights]:
-        weights = super().aggregate_fit(rnd, results, failures)
-        if weights is not None:
-            # Save weights
-            print(f"Saving round {rnd} weights...")
-            np.savez(f"round-{rnd}-weights.npz", *weights)
-        return weights
-
-# Define strategy
-strategy = SaveModelStrategy(
-    fraction_fit=1.0,
-    min_fit_clients=2,
-    min_available_clients=2,
-    eval_fn=get_eval_fn(testloader),
-    on_fit_config_fn=fit_config,
+# Define strategy with the custom callback
+strategy = fl.server.strategy.FedAvg(
     evaluate_metrics_aggregation_fn=weighted_average,
+    on_end_rounds=[SaveWeightsCallback()],
 )
 
 # Start Flower server
