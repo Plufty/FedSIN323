@@ -15,7 +15,7 @@ from efficientnet_pytorch import EfficientNet
 import random
 
 
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -29,8 +29,9 @@ warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 START = time.time()
 MODEL = "alexnet"
+DATE_NOW = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name=MODEL):
+def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, true_labels, predicted_labels, model_name=MODEL):
     cm = confusion_matrix(y_true, y_pred)
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
@@ -39,13 +40,26 @@ def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, los
     plt.title(f'Confusion Matrix\nAccuracy: {accuracy:.2%}, Loss: {loss:.4f}, Time: {elapsed_time:.2f} seconds')
 
     # Save the plot as a PDF
-    output_dir = output_dir + r'/outputs/confusion_matrix/' + model_name
+    output_dir = output_dir + r'/outputs/' + model_name
     os.makedirs(output_dir, exist_ok=True)
-    date_now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    result_dir = output_dir + '/' + model_name +'_' + date_now
+    result_dir = output_dir + '/' + model_name +'_' + DATE_NOW
     os.makedirs(result_dir, exist_ok=True)
     output_path = os.path.join(result_dir, f'{model_name}_confusion_matrix.pdf')
     plt.savefig(output_path, format="pdf", bbox_inches='tight')
+
+    # Calculate precision, recall, and F1-score
+    precision = precision_score(true_labels, predicted_labels)
+    recall = recall_score(true_labels, predicted_labels)
+    f1 = f1_score(true_labels, predicted_labels)
+
+    metrics_path = os.path.join(result_dir, "metrics.txt")
+    with open(metrics_path, 'w') as f:
+        f.write(f"Accuracy: {accuracy:.2%}\n")
+        f.write(f"Precision: {precision:.4f}\n")
+        f.write(f"Recall: {recall:.4f}\n")
+        f.write(f"F1-score: {f1:.4f}\n")
+        f.write(f"Loss: {loss:.4f}\n")
+        f.write(f"Elapsed Time: {elapsed_time:.2f} seconds")
 
 
 
@@ -132,10 +146,9 @@ def train(net, trainloader, epochs, output_dir, model_name=MODEL):
     plt.tight_layout()
 
     # Save the plot as a PDF
-    output_dir = output_dir + r'/outputs/acc_loss/'  + model_name
+    output_dir = output_dir + r'/outputs/'  + model_name
     os.makedirs(output_dir, exist_ok=True)
-    date_now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    result_dir = output_dir + '/' + model_name +'_' + date_now
+    result_dir = output_dir + '/' + model_name +'_' + DATE_NOW
     os.makedirs(result_dir, exist_ok=True)
     output_path = os.path.join(result_dir, f'{model_name}_loss_accuracy_plots.pdf')
     plt.savefig(output_path, format="pdf", bbox_inches='tight')
@@ -177,12 +190,8 @@ def test(net, testloader, output_dir):
 
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
-    save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, loss, elapsed_time)
-    accuracy_path = os.path.join(output_dir, "accuracy.txt")
-    with open(accuracy_path, 'w') as f:
-        f.write(f"Accuracy: {accuracy:.2%}")
-        f.write(f"Loss: {real_loss:.4f}\n")
-        f.write(f"Elapsed Time: {elapsed_time:.2f} seconds")
+    save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, loss, elapsed_time, true_labels, predicted_labels)
+
 
     return real_loss, accuracy
 

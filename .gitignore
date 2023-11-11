@@ -7956,3 +7956,4 @@ outputs/confusion_matrix/resnet/resnet_2023-11-10_07-14-52/resnet_confusion_matr
 outputs/confusion_matrix/resnet/resnet_2023-11-10_08-57-55/resnet_confusion_matrix.pdf
 outputs/confusion_matrix/resnet/resnet_2023-11-10_08-59-05/resnet_confusion_matrix.pdf
 accuracy.txt
+metrics.txt
