@@ -1,4 +1,9 @@
 data/
+data BH/
+data Big/
+data teste/
+data2/
+data2.zip
 data/test
 data/train
 outputs/
@@ -7957,3 +7962,4 @@ outputs/confusion_matrix/resnet/resnet_2023-11-10_08-57-55/resnet_confusion_matr
 outputs/confusion_matrix/resnet/resnet_2023-11-10_08-59-05/resnet_confusion_matrix.pdf
 accuracy.txt
 metrics.txt
+data BH/test/benign/SOB_B_A-14-22549AB-40-011.png

@@ -4,14 +4,16 @@
 
 #3 pip install -r requirements.txt
 
-#4 Configure IP on Clients
+#4 pip install --upgrade --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-#5 Download (Data Client1 on Client1 and Data Client2 on Client 2) from link in dataset.txt
+#5 Configure IP on Clients
 
-#6 Extract on ./FedSIN323 and rename Data Client1 and Data Client2 to data
+#6 Download (Data Client1 on Client1 and Data Client2 on Client 2) from link in dataset.txt
 
-#7 Run server.py on Server
+#7 Extract on ./FedSIN323 and rename Data Client1 and Data Client2 to data
 
-#8 Run client.py on Client1
+#8 Run server.py on Server
 
-#9 Run client.py on Client2
+#9 Run client.py on Client1
+
+#10 Run client.py on Client2
