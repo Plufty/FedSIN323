@@ -28,10 +28,10 @@ import datetime
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 START = time.time()
-MODEL = "alexnet"
+MODEL = "efficientnet"
 DATE_NOW = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, true_labels, predicted_labels, model_name=MODEL):
+def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name=MODEL):
     cm = confusion_matrix(y_true, y_pred)
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
@@ -48,9 +48,9 @@ def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, los
     plt.savefig(output_path, format="pdf", bbox_inches='tight')
 
     # Calculate precision, recall, and F1-score
-    precision = precision_score(true_labels, predicted_labels)
-    recall = recall_score(true_labels, predicted_labels)
-    f1 = f1_score(true_labels, predicted_labels)
+    precision = precision_score(y_true, y_pred)
+    recall = recall_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
 
     metrics_path = os.path.join(result_dir, "metrics.txt")
     with open(metrics_path, 'w') as f:
@@ -88,13 +88,13 @@ class Net(nn.Module):
 def train(net, trainloader, epochs, output_dir, model_name=MODEL):
     """Train the model on the training set."""
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    #optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
+    #optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     # Lists to store loss and accuracy per epoch
     train_loss = []
     train_accuracy = []
-    preds = 0
-
+    preds = 0    
+    net.train()
     for epoch in range(epochs):
         correct, total, total_loss = 0, 0, 0.0
         for inputs, labels in tqdm(trainloader):            
@@ -161,6 +161,9 @@ def test(net, testloader, output_dir):
     correct, loss = 0, 0.0
     true_labels = []
     predicted_labels =  []
+    y_true = []
+    y_pred = []
+    net.eval()
 
     with torch.no_grad():
         for inputs, labels in tqdm(testloader):            
@@ -180,6 +183,8 @@ def test(net, testloader, output_dir):
             # Collect true and predicted labels for confusion matrix
             true_labels.extend(labels.cpu().numpy())
             predicted_labels.extend(torch.argmax(outputs, dim=1).cpu().numpy())
+            y_true += labels.tolist()
+            y_pred += predicted.tolist()
 
     end_time = time.time()
     elapsed_time = end_time - START
@@ -190,7 +195,8 @@ def test(net, testloader, output_dir):
 
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
-    save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, loss, elapsed_time, true_labels, predicted_labels)
+    #save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, real_loss, elapsed_time)
+    save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, real_loss, elapsed_time)
 
 
     return real_loss, accuracy
@@ -251,7 +257,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         self.set_parameters(parameters)
-        train(net, trainloader, epochs=1, output_dir="./")
+        train(net, trainloader, epochs=50, output_dir="./")
         
         return self.get_parameters(config={}), len(trainloader.dataset), {}
 
@@ -262,6 +268,6 @@ class FlowerClient(fl.client.NumPyClient):
 
 # Start Flower client
 fl.client.start_numpy_client(
-    server_address="192.168.3.44:8080",
+    server_address="127.0.0.1:8080",
     client=FlowerClient(),
 )
