@@ -28,7 +28,7 @@ import datetime
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 START = time.time()
-MODEL = "resnet"
+MODEL = "efficientnet"
 DATE_NOW = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name=MODEL):
@@ -88,8 +88,8 @@ class Net(nn.Module):
 def train(net, trainloader, epochs, output_dir, model_name=MODEL):
     """Train the model on the training set."""
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    #optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
+    #optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     # Lists to store loss and accuracy per epoch
     train_loss = []
     train_accuracy = []
